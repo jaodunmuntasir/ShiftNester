@@ -10,6 +10,7 @@ use App\Http\Controllers\ShiftPreferenceController;
 use App\Http\Controllers\DashboardController;
 
 use App\Http\Middleware\EmployeeMiddleware;
+use App\Http\Middleware\AdminMiddleware;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
