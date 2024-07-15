@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Employee Shift Preferences')
+
 @section('content')
 <div class="container">
     <h2 class="text-2xl font-bold mb-4">Employee Shift Preferences</h2>

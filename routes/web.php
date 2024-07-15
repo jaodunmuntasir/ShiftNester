@@ -8,6 +8,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DesignationController;
 use App\Http\Controllers\ShiftPreferenceController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AdminController;
 
 use App\Http\Middleware\EmployeeMiddleware;
 use App\Http\Middleware\AdminMiddleware;
@@ -49,14 +50,14 @@ Route::middleware(['auth', 'employee'])->group(function () {
 // Route for fetching designations by department (used in forms)
 Route::get('/designations/by-department/{department}', [DesignationController::class, 'getByDepartment']);
 
-Route::middleware(['auth', 'admin', 'employee'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/shifts/published', [ShiftController::class, 'viewPublishedShifts'])->name('shifts.published');
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/shift-preferences', [AdminController::class, 'viewShiftPreferences'])->name('admin.view_shift_preferences');
     Route::get('/admin/generate-roster', [AdminController::class, 'generateRoster'])->name('admin.generate_roster');
-    Route::post('/admin/publish-shifts', [AdminController::class, 'publishShifts'])->name('admin.publish_shifts');
+    Route::match(['get', 'post'], '/admin/publish-shifts', [AdminController::class, 'publishShifts'])->name('admin.publish_shifts');
 });
 
 require __DIR__.'/auth.php';

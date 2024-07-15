@@ -58,8 +58,14 @@ class AdminController extends Controller
         return view('admin.generated_roster', compact('roster', 'shifts'));
     }
 
-    public function publishShifts()
+    public function publishShifts(Request $request)
     {
+        if ($request->isMethod('get')) {
+            // Show confirmation page
+            return view('admin.confirm_publish_shifts');
+        }
+
+        // Handle POST request (actual publishing)
         $roster = session('generated_roster');
 
         if (!$roster) {

@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Draft Roster')
+
 @section('content')
 <div class="container">
     <h2 class="text-2xl font-bold mb-4">Generated Roster</h2>
@@ -19,7 +21,7 @@
 
     <div class="mt-6">
         <a href="{{ route('admin.publish_shifts') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-            Publish Shifts
+            Proceed to Publish Shifts
         </a>
     </div>
 </div>
