@@ -21,7 +21,6 @@
 1. Clone the repository:
    ```
    git clone https://github.com/your-repo/employee-shift-management.git
-   cd employee-shift-management
    ```
 
 2. Install PHP dependencies:
