@@ -1,66 +1,274 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Employee Shift Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Table of Contents
+1. [Installation](#installation)
+2. [System Overview](#system-overview)
+3. [Developer Documentation](#developer-documentation)
+4. [User Documentation](#user-documentation)
+   - [Admin Guide](#admin-guide)
+   - [Employee Guide](#employee-guide)
 
-## About Laravel
+## Installation
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Prerequisites
+- PHP 8.2+
+- Composer
+- Node.js and npm
+- MySQL or PostgreSQL
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Steps
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-repo/employee-shift-management.git
+   cd employee-shift-management
+   ```
 
-## Learning Laravel
+2. Install PHP dependencies:
+   ```
+   composer install
+   ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+3. Install JavaScript dependencies:
+   ```
+   npm install
+   ```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+4. Create a copy of the .env file:
+   ```
+   cp .env.example .env
+   ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+5. Generate an application key:
+   ```
+   php artisan key:generate
+   ```
 
-## Laravel Sponsors
+6. Configure your database in the .env file:
+   ```
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=your_database_name
+   DB_USERNAME=your_database_username
+   DB_PASSWORD=your_database_password
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+7. Run database migrations:
+   ```
+   php artisan migrate
+   ```
 
-### Premium Partners
+8. Seed the database (optional):
+   ```
+   php artisan db:seed
+   ```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+9. Compile assets:
+   ```
+   npm run dev
+   ```
 
-## Contributing
+10. Start the development server:
+    ```
+    php artisan serve
+    ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The application should now be accessible at `http://localhost:8000`.
 
-## Code of Conduct
+## System Overview
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The Employee Shift Management System is designed to streamline the process of creating, assigning, and managing employee shifts. It caters to organizations with multiple departments and roles, allowing for efficient scheduling while considering employee preferences and skills.
 
-## Security Vulnerabilities
+Key Features:
+- User authentication with role-based access (Admin/Employee)
+- Department and designation management
+- Employee profile management including skills
+- Shift creation with specific requirements
+- Employee shift preference setting
+- Automated roster generation
+- Manual roster adjustment
+- Shift publishing system
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The system aims to balance employee preferences, required skills, and fair distribution of shifts to create optimal schedules.
 
-## License
+## Developer Documentation
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Project Structure
+
+The project follows the standard Laravel structure with some additional custom components:
+
+- `app/Http/Controllers`: Contains all controllers
+- `app/Models`: Contains Eloquent models
+- `app/Http/Middleware`: Contains custom middleware
+- `database/migrations`: Contains database migrations
+- `resources/views`: Contains Blade view files
+- `routes/web.php`: Defines web routes
+
+### Key Components
+
+1. Models:
+   - `User`: User accounts
+   - `Employee`: Employee profiles
+   - `Department`: Departments
+   - `Designation`: Job designations
+   - `Shift`: Individual shifts
+   - `ShiftPreference`: Employee shift preferences
+   - `Skill`: Employee skills
+
+2. Controllers:
+   - `AdminController`: Admin-specific actions
+   - `EmployeeController`: Employee-related operations
+   - `ShiftController`: Shift management
+   - `ShiftPreferenceController`: Shift preference handling
+   - `DepartmentController`: Department management
+   - `DesignationController`: Designation management
+
+3. Middleware:
+   - `AdminMiddleware`: Admin route protection
+   - `EmployeeMiddleware`: Employee route protection
+
+4. Key Processes:
+   - Shift Creation: `ShiftController@store`
+   - Preference Setting: `ShiftPreferenceController@store`
+   - Roster Generation: `AdminController@generateRoster`
+   - Shift Publishing: `AdminController@publishShifts`
+
+### Extending the System
+
+To add new features or modify existing ones:
+
+1. Create/modify models in `app/Models`
+2. Update controllers in `app/Http/Controllers`
+3. Add routes in `routes/web.php`
+4. Create/modify views in `resources/views`
+5. Add database changes via migrations
+
+Follow Laravel best practices and maintain consistent code structure.
+
+## User Documentation
+
+### Admin Guide
+
+1. Dashboard
+   - Access: Login with admin credentials
+   - Features: Overview of system status, quick links to main functions
+
+2. Department Management
+   - Access: Navigate to "Departments" in the admin menu
+   - Features:
+     - View all departments
+     - Add new department
+     - Edit existing department
+     - Delete department (if not associated with employees/shifts)
+
+3. Designation Management
+   - Access: Navigate to "Designations" in the admin menu
+   - Features:
+     - View all designations
+     - Add new designation (associate with department)
+     - Edit existing designation
+     - Delete designation (if not associated with employees)
+
+4. Employee Management
+   - Access: Navigate to "Employees" in the admin menu
+   - Features:
+     - View all employees
+     - Add new employee
+       - Set name, email, department, designation
+       - Assign skills
+     - Edit employee details
+     - Deactivate/reactivate employee
+
+5. Skill Management
+   - Access: Navigate to "Skills" in the admin menu
+   - Features:
+     - View all skills
+     - Add new skill
+     - Edit skill
+     - Delete unused skills
+
+6. Shift Creation
+   - Access: Navigate to "Create Shift" in the admin menu
+   - Features:
+     - Set shift date and time
+     - Specify required number of employees
+     - Set department and designation requirements
+     - Add skill requirements
+
+7. Roster Generation
+   - Access: Navigate to "Generate Roster" in the admin menu
+   - Features:
+     - Select date range for roster
+     - Generate roster based on preferences and requirements
+     - View generated roster
+     - Make manual adjustments if necessary
+
+8. Shift Publishing
+   - Access: From the generated roster page
+   - Features:
+     - Review final roster
+     - Publish roster to make it visible to employees
+
+9. Reports
+   - Access: Navigate to "Reports" in the admin menu
+   - Features:
+     - View shift coverage statistics
+     - Employee preference fulfillment rates
+     - Department-wise shift distribution
+
+### Employee Guide
+
+1. Dashboard
+   - Access: Login with employee credentials
+   - Features: View upcoming shifts, quick links to main functions
+
+2. Profile Management
+   - Access: Click on profile icon or "My Profile" in the menu
+   - Features:
+     - View personal information
+     - Update contact details
+     - View assigned department and designation
+
+3. Skill Management
+   - Access: Navigate to "My Skills" in the employee menu
+   - Features:
+     - View current skills
+     - Request addition of new skills (subject to admin approval)
+
+4. Shift Preference Setting
+   - Access: Navigate to "Set Shift Preferences" in the employee menu
+   - Features:
+     - View available shifts for preference setting
+     - Set preference level for each shift (e.g., 1 - Most Preferred, 3 - Least Preferred)
+     - Update preferences before roster generation deadline
+
+5. View Assigned Shifts
+   - Access: Navigate to "My Shifts" in the employee menu
+   - Features:
+     - View all assigned shifts
+     - Filter shifts by date range
+     - See shift details (time, department, required skills)
+
+6. Shift Swapping (if enabled)
+   - Access: From "My Shifts" page
+   - Features:
+     - Request to swap shift with another employee
+     - View swap requests from others
+     - Accept/reject swap requests
+
+7. Time-Off Requests
+   - Access: Navigate to "Time-Off Requests" in the employee menu
+   - Features:
+     - Submit time-off requests
+     - View status of submitted requests
+     - Cancel pending requests
+
+8. Notifications
+   - Access: Click on notification icon in the top menu
+   - Features:
+     - Receive alerts for new shift assignments
+     - Get notified of approved time-off requests
+     - See reminders for upcoming shifts
+
+This comprehensive guide covers the installation process, system overview, developer documentation, and detailed user guides for both administrators and employees. Each feature is explained with access instructions and available functionalities, providing a clear understanding of the Employee Shift Management System.
