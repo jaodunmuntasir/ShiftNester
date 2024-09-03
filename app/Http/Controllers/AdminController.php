@@ -17,34 +17,62 @@ class AdminController extends Controller
 
     public function generateRoster()
     {
-        $shifts = Shift::with(['preferences.employee'])->get();
+        $shifts = Shift::with(['preferences.employee', 'requirements'])->orderBy('date')->orderBy('start_time')->get();
         $roster = [];
+        $employeeShiftCounts = [];
+        $unassignedPreferences = [];
 
         foreach ($shifts as $shift) {
             $requiredEmployees = $shift->required_employees;
             $assignedEmployees = [];
 
-            // Sort preferences by level (1 being highest)
-            $sortedPreferences = $shift->preferences->sortBy('preference_level');
+            // Get required skills for this shift
+            $requiredSkills = $shift->requirements->pluck('skill_id')->toArray();
 
-            foreach ($sortedPreferences as $preference) {
-                if (count($assignedEmployees) < $requiredEmployees) {
-                    $assignedEmployees[] = $preference->employee;
-                } else {
-                    break;
+            // First, assign employees based on their 1st and 2nd preferences
+            for ($preferenceLevel = 1; $preferenceLevel <= 2; $preferenceLevel++) {
+                $preferences = $shift->preferences->where('preference_level', $preferenceLevel)->sortBy(function ($preference) use ($employeeShiftCounts, $requiredSkills) {
+                    $employee = $preference->employee;
+                    $shiftCount = $employeeShiftCounts[$employee->id] ?? 0;
+                    $skillMatch = $employee->skills->whereIn('id', $requiredSkills)->count();
+                    
+                    // Lower score is better (prioritize fewer shifts and better skill match)
+                    return $shiftCount - ($skillMatch * 0.5);
+                });
+                
+                foreach ($preferences as $preference) {
+                    if (count($assignedEmployees) < $requiredEmployees) {
+                        $assignedEmployees[] = $preference->employee;
+                        $employeeId = $preference->employee->id;
+                        $employeeShiftCounts[$employeeId] = ($employeeShiftCounts[$employeeId] ?? 0) + 1;
+                    } else {
+                        // Store unassigned preferences for later consideration
+                        $unassignedPreferences[] = $preference;
+                    }
                 }
             }
 
-            // If we still need more employees, assign randomly from remaining employees
+            // If we still need more employees, consider other factors
             if (count($assignedEmployees) < $requiredEmployees) {
-                $remainingEmployees = Employee::whereNotIn('id', $assignedEmployees->pluck('id'))->get();
-                $remainingEmployees = $remainingEmployees->shuffle();
+                $remainingPreferences = $shift->preferences->whereNotIn('employee_id', collect($assignedEmployees)->pluck('id'));
+                
+                // Sort remaining preferences by level, skill match, and fair distribution
+                $sortedPreferences = $remainingPreferences->sortBy(function ($preference) use ($requiredSkills, $employeeShiftCounts) {
+                    $employee = $preference->employee;
+                    $skillMatch = $employee->skills->whereIn('id', $requiredSkills)->count();
+                    $shiftCount = $employeeShiftCounts[$employee->id] ?? 0;
+                    
+                    // Lower score is better
+                    return ($preference->preference_level * 10) - ($skillMatch * 2) + $shiftCount;
+                });
 
-                foreach ($remainingEmployees as $employee) {
+                foreach ($sortedPreferences as $preference) {
                     if (count($assignedEmployees) < $requiredEmployees) {
-                        $assignedEmployees[] = $employee;
+                        $assignedEmployees[] = $preference->employee;
+                        $employeeId = $preference->employee->id;
+                        $employeeShiftCounts[$employeeId] = ($employeeShiftCounts[$employeeId] ?? 0) + 1;
                     } else {
-                        break;
+                        $unassignedPreferences[] = $preference;
                     }
                 }
             }
@@ -52,7 +80,24 @@ class AdminController extends Controller
             $roster[$shift->id] = $assignedEmployees;
         }
 
-        // Store the generated roster in the session for now
+        // Try to accommodate unassigned preferences in other shifts
+        foreach ($unassignedPreferences as $preference) {
+            $employee = $preference->employee;
+            $potentialShifts = $shifts->where('id', '!=', $preference->shift_id)
+                                    ->where('date', '>=', $preference->shift->date)
+                                    ->sortBy('date');
+
+            foreach ($potentialShifts as $shift) {
+                if (count($roster[$shift->id]) < $shift->required_employees && 
+                    !in_array($employee, $roster[$shift->id])) {
+                    $roster[$shift->id][] = $employee;
+                    $employeeShiftCounts[$employee->id] = ($employeeShiftCounts[$employee->id] ?? 0) + 1;
+                    break;
+                }
+            }
+        }
+
+        // Store the generated roster in the session
         session(['generated_roster' => $roster]);
 
         return view('admin.generated_roster', compact('roster', 'shifts'));
