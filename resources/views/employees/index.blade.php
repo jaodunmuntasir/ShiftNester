@@ -11,7 +11,7 @@
                 <form method="GET" action="{{ route('employees.index') }}" class="flex-grow mb-4 sm:mb-0 sm:mr-4">
                     <div class="flex">
                         <input type="text" name="search" placeholder="Search by name or email" value="{{ request('search') }}" class="w-full px-4 py-2 rounded-l-lg border-t border-b border-l text-gray-800 border-gray-200 bg-white focus:outline-none focus:border-red-500" />
-                        <button type="submit" class="px-4 rounded-r-lg bg-blue-600 text-white font-bold p-2 uppercase border-blue-600 border-t border-b border-r focus:outline-none">
+                        <button type="submit" class="px-4 rounded-r-lg bg-blue-600 text-white font-bold p-2 border-blue-600 border-t border-b border-r focus:outline-none">
                             Search
                         </button>
                     </div>

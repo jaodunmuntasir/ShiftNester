@@ -7,9 +7,20 @@ use Illuminate\Http\Request;
 
 class SkillController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $skills = Skill::paginate(10);
+        $query = Skill::query();
+
+        if ($request->has('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('sort')) {
+            $query->orderBy($request->sort, $request->direction ?? 'asc');
+        }
+
+        $skills = $query->paginate(10);
+
         return view('skills.index', compact('skills'));
     }
 
