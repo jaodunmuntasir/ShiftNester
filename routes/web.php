@@ -35,6 +35,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/shifts/create', [ShiftController::class, 'create'])->name('shifts.create');
     Route::post('/shifts/generate', [ShiftController::class, 'generateShifts'])->name('shifts.generate');
     Route::post('/shifts', [ShiftController::class, 'storeShifts'])->name('shifts.store');
+    Route::delete('/shifts/{shift}', [ShiftController::class, 'destroy'])->name('shifts.destroy');
 
     Route::resource('employees', EmployeeController::class);
     Route::resource('skills', SkillController::class);
@@ -63,6 +64,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/generate-roster', [AdminController::class, 'generateRoster'])->name('admin.generate_roster');
     Route::get('/admin/view-generated-roster', [AdminController::class, 'viewGeneratedRoster'])->name('admin.view_generated_roster');
     Route::match(['get', 'post'], '/admin/publish-shifts', [AdminController::class, 'publishShifts'])->name('admin.publish_shifts');
+    Route::get('/shifts/calendar', [ShiftController::class, 'calendar'])->name('shifts.calendar');
 });
 
 require __DIR__.'/auth.php';

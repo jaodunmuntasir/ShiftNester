@@ -13,9 +13,11 @@ class ShiftController extends Controller
     public function index()
     {
         $shifts = Shift::with(['requirements.department', 'requirements.designation'])
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->paginate(10);
+            ->get()
+            ->groupBy(function($shift) {
+                return $shift->date->format('Y-m-d');
+            });
+
         return view('shifts.index', compact('shifts'));
     }
 
@@ -104,5 +106,26 @@ class ShiftController extends Controller
             ->get();
 
         return view('shifts.published', compact('publishedShifts'));
+    }
+
+    public function calendar()
+    {
+        $shifts = Shift::with(['requirements.department', 'requirements.designation'])
+            ->get()
+            ->groupBy(function($shift) {
+                return $shift->date->format('Y-m-d');
+            });
+
+        return view('shifts.index', compact('shifts'));
+    }
+
+    public function destroy(Shift $shift)
+    {
+        try {
+            $shift->delete();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }
