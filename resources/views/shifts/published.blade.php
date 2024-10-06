@@ -15,7 +15,7 @@
         <div class="lg:w-2/3">
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4" id="selected-date">Select a date to view published shifts</h3>
-                <div id="shifts-container" class="space-y-4">
+                <div id="shifts-container" class="space-y-6">
                     <!-- Published shifts will be dynamically loaded here -->
                 </div>
             </div>
@@ -25,10 +25,17 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .tab-active {
+        border-bottom: 2px solid #3B82F6;
+        color: #3B82F6;
+    }
+</style>
 @endpush
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1.10.7/dayjs.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const shiftsData = @json($publishedShifts);
@@ -59,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadPublishedShifts(date) {
         const shiftsContainer = document.getElementById('shifts-container');
         const selectedDateElement = document.getElementById('selected-date');
-        selectedDateElement.textContent = `Published Shifts for ${date}`;
+        selectedDateElement.textContent = `Published Shifts for ${dayjs(date).format('MMMM D, YYYY')}`;
         
         const shiftsForDate = shiftsData[date] || [];
         
@@ -68,25 +75,48 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        let shiftsHtml = '';
-        shiftsForDate.forEach(shift => {
+        let shiftsHtml = `
+            <div class="mb-4">
+                <div class="flex border-b">
+                    ${shiftsForDate.map((shift, index) => `
+                        <button class="px-4 py-2 text-sm font-medium ${index === 0 ? 'tab-active' : ''}" onclick="showShift(${shift.id})">
+                            Shift ${index + 1}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        shiftsForDate.forEach((shift, index) => {
+            const groupedAssignments = groupAssignmentsByDepartment(shift.published_shifts);
+
             shiftsHtml += `
-                <div class="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+                <div id="shift-${shift.id}" class="shift-content ${index !== 0 ? 'hidden' : ''}">
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="text-xl font-semibold text-gray-800">Shift ID: ${shift.id}</h4>
+                        <span class="text-sm text-gray-600">${dayjs(shift.start_time).format('h:mm A')} - ${dayjs(shift.end_time).format('h:mm A')}</span>
                     </div>
-                    <div class="text-sm text-gray-600">
-                        <p class="font-semibold mt-2">Assignments:</p>
-                        <ul class="list-disc list-inside pl-4">
-                            ${shift.published_shifts.map(ps => `
-                                <li>
-                                    Department: ${ps.department.name}, 
-                                    Designation: ${ps.designation.name}, 
-                                    Employee: ${ps.employee ? ps.employee.name : 'OPEN'},
-                                    Is Open: ${ps.is_open ? 'Yes' : 'No'}
-                                </li>
-                            `).join('')}
-                        </ul>
+                    <div class="space-y-4">
+                        ${Object.entries(groupedAssignments).map(([department, designations]) => `
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <h5 class="font-semibold text-gray-700 mb-2">${department}</h5>
+                                ${Object.entries(designations).map(([designation, employees]) => `
+                                    <div class="mb-3">
+                                        <h6 class="text-sm font-medium text-gray-600 mb-1">${designation}</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                            ${employees.map(emp => `
+                                                <div class="text-sm ${emp.is_open ? 'text-red-600 font-semibold' : 'text-gray-600'} flex items-center">
+                                                <svg class="w-4 h-4 mr-2 ${emp.is_open ? 'text-red-600' : 'text-gray-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                    </svg>
+                                                    ${emp.is_open ? 'OPEN' : emp.employee.name}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `;
@@ -95,7 +125,26 @@ document.addEventListener('DOMContentLoaded', function() {
         shiftsContainer.innerHTML = shiftsHtml;
     }
 
+    function groupAssignmentsByDepartment(assignments) {
+        const grouped = {};
+        assignments.forEach(assignment => {
+            const dept = assignment.department.name;
+            const desig = assignment.designation.name;
+            if (!grouped[dept]) grouped[dept] = {};
+            if (!grouped[dept][desig]) grouped[dept][desig] = [];
+            grouped[dept][desig].push(assignment);
+        });
+        return grouped;
+    }
+
     highlightShiftDates();
+
+    window.showShift = function(shiftId) {
+        document.querySelectorAll('.shift-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`shift-${shiftId}`).classList.remove('hidden');
+        document.querySelectorAll('.tab-active').forEach(el => el.classList.remove('tab-active'));
+        event.target.classList.add('tab-active');
+    }
 });
 </script>
 @endpush

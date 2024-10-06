@@ -48,6 +48,8 @@ class AdminController extends Controller
             $query->with(['employee', 'department', 'designation']);
         }])
         ->whereHas('generatedShifts')
+        ->orderBy('date')
+        ->orderBy('start_time')
         ->get()
         ->groupBy(function($shift) {
             return $shift->date->format('Y-m-d');
@@ -72,6 +74,8 @@ class AdminController extends Controller
             $query->with(['employee', 'department', 'designation']);
         }])
         ->whereHas('publishedShifts')
+        ->orderBy('date')
+        ->orderBy('start_time')
         ->get()
         ->groupBy(function($shift) {
             return $shift->date->format('Y-m-d');
