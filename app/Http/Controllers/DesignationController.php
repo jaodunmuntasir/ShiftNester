@@ -8,9 +8,32 @@ use Illuminate\Http\Request;
 
 class DesignationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $designations = Designation::with('department')->paginate(10);
+        $query = Designation::with('department');
+
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where('name', 'like', "%{$searchTerm}%")
+                ->orWhereHas('department', function ($q) use ($searchTerm) {
+                    $q->where('name', 'like', "%{$searchTerm}%");
+                });
+        }
+
+        if ($request->has('sort')) {
+            $direction = $request->direction == 'asc' ? 'asc' : 'desc';
+            
+            if ($request->sort == 'name') {
+                $query->orderBy('name', $direction);
+            } elseif ($request->sort == 'department') {
+                $query->join('departments', 'designations.department_id', '=', 'departments.id')
+                    ->orderBy('departments.name', $direction)
+                    ->select('designations.*');
+            }
+        }
+
+        $designations = $query->paginate(10);
+
         return view('designations.index', compact('designations'));
     }
 
