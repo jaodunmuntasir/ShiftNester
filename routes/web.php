@@ -60,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/shift-preferences', [AdminController::class, 'viewShiftPreferences'])->name('admin.view_shift_preferences');
     Route::get('/admin/generate-roster', [AdminController::class, 'generateRoster'])->name('admin.generate_roster');
+    Route::get('/admin/view-generated-roster', [AdminController::class, 'viewGeneratedRoster'])->name('admin.view_generated_roster');
     Route::match(['get', 'post'], '/admin/publish-shifts', [AdminController::class, 'publishShifts'])->name('admin.publish_shifts');
 });
 

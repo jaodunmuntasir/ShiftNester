@@ -9,6 +9,7 @@ use App\Models\ShiftRequirement;
 use App\Models\PublishedShift;
 use App\Models\Department;
 use App\Models\Designation;
+use App\Models\GeneratedShift;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,36 +25,32 @@ class AdminController extends Controller
     public function generateRoster()
     {
         $rosterGenerator = new RosterGenerator();
-        $generatedRoster = $rosterGenerator->generate();
-
-        $shifts = Shift::with(['requirements.department', 'requirements.designation'])
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->get();
-
-        session(['generated_roster' => $generatedRoster]);
-
-        return view('admin.generated_roster', compact('generatedRoster', 'shifts'));
+        if ($rosterGenerator->generate()) {
+            $generatedShifts = GeneratedShift::with(['shift', 'employee', 'department', 'designation'])
+                ->get()
+                ->groupBy('shift_id');
+            return view('admin.generated_roster', compact('generatedShifts'))->with('success', 'Roster generated successfully.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to generate roster.');
+        }
     }
 
-    public function publishShifts(Request $request)
+    public function viewGeneratedRoster()
     {
-        if ($request->isMethod('get')) {
-            return view('admin.confirm_publish_shifts');
-        }
+        $generatedShifts = GeneratedShift::with(['shift', 'employee', 'department', 'designation'])
+            ->get()
+            ->groupBy('shift_id');
+        return view('admin.generated_roster', compact('generatedShifts'));
+    }
 
-        $roster = session('generated_roster');
-
-        if (!$roster) {
-            return redirect()->route('admin.view_shift_preferences')->with('error', 'No roster generated. Please generate a roster first.');
-        }
-
+    public function publishShifts()
+    {
         $publisher = new RosterPublisher();
-        $publisher->publish($roster);
-
-        session()->forget('generated_roster');
-
-        return redirect()->route('shifts.published')->with('success', 'Shifts have been published successfully.');
+        if ($publisher->publish()) {
+            return redirect()->route('shifts.published')->with('success', 'Shifts have been published successfully.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to publish shifts.');
+        }
     }
 
     public function viewPublishedShifts()
@@ -70,28 +67,35 @@ class AdminController extends Controller
 
 class RosterGenerator
 {
-    private $shifts;
-    private $roster = [];
     private $employeeShiftCounts = [];
 
     public function generate()
     {
-        $this->shifts = Shift::with(['requirements.department', 'requirements.designation', 'preferences.employee'])
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->get();
+        DB::beginTransaction();
+        try {
+            // Clear any previously generated shifts
+            GeneratedShift::truncate();
 
-        foreach ($this->shifts as $shift) {
-            $this->allocateEmployeesForShift($shift);
+            $shifts = Shift::with(['requirements.department', 'requirements.designation', 'preferences.employee'])
+                ->orderBy('date')
+                ->orderBy('start_time')
+                ->get();
+
+            foreach ($shifts as $shift) {
+                $this->allocateEmployeesForShift($shift);
+            }
+
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error generating roster: ' . $e->getMessage());
+            throw $e;
         }
-
-        return $this->roster;
     }
 
     private function allocateEmployeesForShift($shift)
     {
-        $this->roster[$shift->id] = [];
-
         foreach ($shift->requirements as $requirement) {
             $this->allocateEmployeesForRequirement($shift, $requirement);
         }
@@ -101,6 +105,7 @@ class RosterGenerator
     {
         $allocatedCount = 0;
         $requiredCount = $requirement->employee_count;
+        $allocatedEmployees = [];
 
         for ($preferenceLevel = 1; $preferenceLevel <= 3 && $allocatedCount < $requiredCount; $preferenceLevel++) {
             $preferences = $this->getPreferences($shift, $requirement, $preferenceLevel);
@@ -110,17 +115,33 @@ class RosterGenerator
 
                 $employee = $preference->employee;
                 if ($this->canAllocateEmployee($employee, $requirement)) {
-                    $this->roster[$shift->id][] = $employee;
+                    $allocatedEmployees[] = $employee;
                     $this->employeeShiftCounts[$employee->id] = ($this->employeeShiftCounts[$employee->id] ?? 0) + 1;
                     $allocatedCount++;
                 }
             }
         }
 
+        // Store allocated employees
+        foreach ($allocatedEmployees as $employee) {
+            GeneratedShift::create([
+                'shift_id' => $shift->id,
+                'employee_id' => $employee->id,
+                'department_id' => $requirement->department_id,
+                'designation_id' => $requirement->designation_id,
+                'is_open' => false
+            ]);
+        }
+
         // Fill remaining positions with "OPEN"
-        while ($allocatedCount < $requiredCount) {
-            $this->roster[$shift->id][] = "OPEN ({$requirement->department->name} - {$requirement->designation->name})";
-            $allocatedCount++;
+        for ($i = $allocatedCount; $i < $requiredCount; $i++) {
+            GeneratedShift::create([
+                'shift_id' => $shift->id,
+                'employee_id' => null,
+                'department_id' => $requirement->department_id,
+                'designation_id' => $requirement->designation_id,
+                'is_open' => true
+            ]);
         }
     }
 
@@ -147,51 +168,30 @@ class RosterGenerator
 
 class RosterPublisher
 {
-    public function publish($roster)
+    public function publish()
     {
         DB::beginTransaction();
-        
         try {
-            foreach ($roster as $shiftId => $allocations) {
-                $shift = Shift::findOrFail($shiftId);
-                
-                // Delete any existing published shifts for this shift
-                PublishedShift::where('shift_id', $shiftId)->delete();
-                
-                foreach ($allocations as $allocation) {
-                    if (is_object($allocation) && method_exists($allocation, 'id')) {
-                        // This is an allocated employee
-                        PublishedShift::create([
-                            'shift_id' => $shiftId,
-                            'employee_id' => $allocation->id,
-                            'department_id' => $allocation->department_id,
-                            'designation_id' => $allocation->designation_id,
-                            'is_open' => false
-                        ]);
-                    } elseif (is_string($allocation) && strpos($allocation, 'OPEN') !== false) {
-                        // This is an open position
-                        preg_match('/OPEN \((.*?) - (.*?)\)/', $allocation, $matches);
-                        $department = Department::where('name', $matches[1])->first();
-                        $designation = Designation::where('name', $matches[2])->first();
-                        
-                        PublishedShift::create([
-                            'shift_id' => $shiftId,
-                            'employee_id' => null,
-                            'department_id' => $department->id,
-                            'designation_id' => $designation->id,
-                            'is_open' => true
-                        ]);
-                    }
-                }
-                
-                $shift->is_published = true;
-                $shift->save();
+            // Clear any previously published shifts
+            PublishedShift::truncate();
+
+            // Copy all generated shifts to published shifts
+            $generatedShifts = \App\Models\GeneratedShift::all();
+            foreach ($generatedShifts as $generatedShift) {
+                PublishedShift::create($generatedShift->toArray());
             }
-            
+
+            // Mark all shifts as published
+            Shift::whereIn('id', $generatedShifts->pluck('shift_id')->unique())->update(['is_published' => true]);
+
+            // Clear generated shifts
+            \App\Models\GeneratedShift::truncate();
+
             DB::commit();
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Error publishing roster: ' . $e->getMessage());
             throw $e;
         }
     }

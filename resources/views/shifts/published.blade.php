@@ -6,40 +6,53 @@
 <div class="container mx-auto px-4">
     <h2 class="text-2xl font-bold mb-4">Published Shifts</h2>
 
-    @if($publishedShifts->isEmpty())
-        <p class="text-gray-600">No shifts have been published yet.</p>
-    @else
-        @foreach($publishedShifts as $shift)
-            <div class="mb-6 p-4 bg-white shadow rounded">
-                <h3 class="text-xl font-semibold mb-2">
-                    {{ $shift->date->format('l, F j, Y') }} ({{ $shift->start_time->format('H:i') }} - {{ $shift->end_time->format('H:i') }})
-                </h3>
-                
-                @foreach($shift->publishedShifts->groupBy('department.name') as $departmentName => $departmentShifts)
-                    <div class="mt-3">
-                        <h4 class="font-semibold">{{ $departmentName }}</h4>
-                        <ul class="list-disc pl-5">
-                            @foreach($departmentShifts->groupBy('designation.name') as $designationName => $designationShifts)
-                                <li>
-                                    {{ $designationName }}:
-                                    <ul class="list-none pl-3">
-                                        @foreach($designationShifts as $publishedShift)
-                                            <li>
-                                                @if($publishedShift->is_open)
-                                                    <span class="text-orange-600">OPEN</span>
-                                                @else
-                                                    {{ $publishedShift->employee->name }}
-                                                @endif
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endforeach
-            </div>
-        @endforeach
-    @endif
+    <x-calendar />
+
+    <div id="publishedShiftDetails" class="mt-4">
+        <!-- Published shift details will be displayed here -->
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const publishedShiftDetails = document.getElementById('publishedShiftDetails');
+    const publishedShifts = @json($publishedShifts);
+
+    document.querySelector('.calendar-grid').addEventListener('click', function(e) {
+        const day = e.target.closest('.calendar-day');
+        if (day) {
+            const date = day.dataset.date;
+            const shiftsForDate = publishedShifts.filter(shift => shift.date === date);
+            
+            let html = `<h3 class="text-xl font-semibold mb-2">Published Shifts for ${date}</h3>`;
+            if (shiftsForDate.length === 0) {
+                html += '<p>No published shifts for this date.</p>';
+            } else {
+                shiftsForDate.forEach(shift => {
+                    html += `
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                ${shift.start_time} - ${shift.end_time}
+                            </div>
+                            <div class="card-body">
+                    `;
+                    shift.publishedShifts.forEach(pubShift => {
+                        html += `
+                            <div class="mb-2">
+                                <strong>${pubShift.department.name} - ${pubShift.designation.name}:</strong>
+                                ${pubShift.is_open ? '<span class="text-danger">OPEN</span>' : pubShift.employee.name}
+                            </div>
+                        `;
+                    });
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            publishedShiftDetails.innerHTML = html;
+        }
+    });
+});
+</script>
 @endsection

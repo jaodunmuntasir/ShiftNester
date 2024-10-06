@@ -6,30 +6,54 @@
 <div class="container">
     <h2 class="text-2xl font-bold mb-4">Generated Roster</h2>
 
-    @foreach($shifts as $shift)
-        <div class="mb-6 p-4 bg-white shadow rounded">
-            <h3 class="text-xl font-semibold mb-2">
-                Shift: {{ $shift->date->format('Y-m-d') }} {{ $shift->start_time->format('H:i') }} - {{ $shift->end_time->format('H:i') }}
-            </h3>
-            @foreach($shift->requirements as $requirement)
-                <h4 class="font-semibold mt-2">{{ $requirement->department->name }} - {{ $requirement->designation->name }}</h4>
-                <ul>
-                    @foreach($generatedRoster[$shift->id] as $allocation)
-                        @if(is_string($allocation) && str_contains($allocation, "{$requirement->department->name} - {$requirement->designation->name}"))
-                            <li class="text-red-500">{{ $allocation }}</li>
-                        @elseif(is_object($allocation) && $allocation->department_id == $requirement->department_id && $allocation->designation_id == $requirement->designation_id)
-                            <li>{{ $allocation->name }}</li>
-                        @endif
-                    @endforeach
-                </ul>
-            @endforeach
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
         </div>
-    @endforeach
+    @endif
+
+    <x-calendar />
+
+    <div id="shiftDetails" class="mt-4">
+        <!-- Shift details will be displayed here -->
+    </div>
 
     <div class="mt-6">
-        <a href="{{ route('admin.publish_shifts') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+        <a href="{{ route('admin.publish_shifts') }}" class="btn btn-success">
             Proceed to Publish Shifts
         </a>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shiftDetails = document.getElementById('shiftDetails');
+    const generatedShifts = @json($generatedShifts);
+
+    document.querySelector('.calendar-grid').addEventListener('click', function(e) {
+        const day = e.target.closest('.calendar-day');
+        if (day) {
+            const date = day.dataset.date;
+            const shiftsForDate = generatedShifts[date] || [];
+            
+            let html = `<h3 class="text-xl font-semibold mb-2">Shifts for ${date}</h3>`;
+            if (shiftsForDate.length === 0) {
+                html += '<p>No shifts generated for this date.</p>';
+            } else {
+                html += '<ul class="list-group">';
+                shiftsForDate.forEach(shift => {
+                    html += `
+                        <li class="list-group-item">
+                            <strong>${shift.department.name} - ${shift.designation.name}:</strong>
+                            ${shift.is_open ? '<span class="text-danger">OPEN</span>' : shift.employee.name}
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+            }
+            shiftDetails.innerHTML = html;
+        }
+    });
+});
+</script>
 @endsection

@@ -6,48 +6,69 @@
 <div class="container">
     <h2 class="text-2xl font-bold mb-4">Employee Shift Preferences</h2>
 
-    @foreach($shifts as $shift)
-        <div class="mb-6 p-4 bg-white shadow rounded">
-            <h3 class="text-xl font-semibold mb-2">
-                Shift: {{ $shift->date->format('Y-m-d') }} {{ $shift->start_time->format('H:i') }} - {{ $shift->end_time->format('H:i') }}
-            </h3>
-            <table class="w-full">
-                <thead>
-                    <tr>
-                        <th class="text-left">Employee</th>
-                        <th class="text-left">Preference</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($shift->preferences as $preference)
-                        <tr>
-                            <td>{{ $preference->employee->name }}</td>
-                            <td>
-                                @switch($preference->preference_level)
-                                    @case(1)
-                                        High
-                                        @break
-                                    @case(2)
-                                        Medium
-                                        @break
-                                    @case(3)
-                                        Low
-                                        @break
-                                    @default
-                                        No Preference
-                                @endswitch
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endforeach
+    <x-calendar />
+
+    <div id="preferenceDetails" class="mt-4">
+        <!-- Preference details will be displayed here -->
+    </div>
 
     <div class="mt-6">
-        <a href="{{ route('admin.generate_roster') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <a href="{{ route('admin.generate_roster') }}" class="btn btn-primary">
             Generate Automatic Roster
         </a>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const preferenceDetails = document.getElementById('preferenceDetails');
+    const shifts = @json($shifts);
+
+    document.querySelector('.calendar-grid').addEventListener('click', function(e) {
+        const day = e.target.closest('.calendar-day');
+        if (day) {
+            const date = day.dataset.date;
+            const shiftsForDate = shifts.filter(shift => shift.date === date);
+            
+            let html = `<h3 class="text-xl font-semibold mb-2">Preferences for ${date}</h3>`;
+            if (shiftsForDate.length === 0) {
+                html += '<p>No shifts scheduled for this date.</p>';
+            } else {
+                shiftsForDate.forEach(shift => {
+                    html += `
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                ${shift.start_time} - ${shift.end_time}
+                            </div>
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Employee</th>
+                                            <th>Preference</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    shift.preferences.forEach(pref => {
+                        html += `
+                            <tr>
+                                <td>${pref.employee.name}</td>
+                                <td>${['', 'High', 'Medium', 'Low'][pref.preference_level] || 'No Preference'}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            preferenceDetails.innerHTML = html;
+        }
+    });
+});
+</script>
 @endsection

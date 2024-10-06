@@ -6,28 +6,48 @@
 <div class="container mx-auto px-4">
     <h2 class="text-2xl font-bold mb-4">Open Shifts Available for Claiming</h2>
 
-    @if($openShifts->isEmpty())
-        <p class="text-gray-600">There are no open shifts available for claiming at this time.</p>
-    @else
-        @foreach($openShifts as $date => $shifts)
-            <div class="mb-6 p-4 bg-white shadow rounded">
-                <h3 class="text-xl font-semibold mb-2">{{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}</h3>
-                <ul class="list-disc pl-5">
-                    @foreach($shifts as $openShift)
-                        <li>
-                            {{ $openShift->shift->start_time->format('H:i') }} - {{ $openShift->shift->end_time->format('H:i') }}
-                            ({{ $openShift->department->name }} - {{ $openShift->designation->name }})
-                            <form action="{{ route('shifts.claim', $openShift) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-sm">
-                                    Claim
-                                </button>
-                            </form>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        @endforeach
-    @endif
+    <x-calendar />
+
+    <div id="openShiftDetails" class="mt-4">
+        <!-- Open shift details will be displayed here -->
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const openShiftDetails = document.getElementById('openShiftDetails');
+    const openShifts = @json($openShifts);
+
+    document.querySelector('.calendar-grid').addEventListener('click', function(e) {
+        const day = e.target.closest('.calendar-day');
+        if (day) {
+            const date = day.dataset.date;
+            const shiftsForDate = openShifts[date] || [];
+            
+            let html = `<h3 class="text-xl font-semibold mb-2">Open Shifts for ${date}</h3>`;
+            if (shiftsForDate.length === 0) {
+                html += '<p>No open shifts available for this date.</p>';
+            } else {
+                html += '<div class="list-group">';
+                shiftsForDate.forEach(shift => {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">${shift.shift.start_time} - ${shift.shift.end_time}</h5>
+                                <small>${shift.department.name} - ${shift.designation.name}</small>
+                            </div>
+                            <form action="${route('shifts.claim', shift.id)}" method="POST" class="mt-2">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-primary">Claim</button>
+                            </form>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            openShiftDetails.innerHTML = html;
+        }
+    });
+});
+</script>
 @endsection
