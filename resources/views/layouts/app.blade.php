@@ -31,7 +31,8 @@
         <aside class="hidden md:flex md:flex-shrink-0">
             <div class="flex flex-col w-64">
                 <div class="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-primary">
-                    <div class="flex items-center flex-shrink-0 px-4">
+                    <div class="flex flex-col items-center flex-shrink-0 px-4">
+                        <img src="{{ asset('https://shorturl.at/lC0oN') }}" alt="Logo" class="w-16 h-16 mb-2">
                         <span class="text-2xl font-semibold text-white">ShiftNester</span>
                     </div>
                     <nav class="mt-5 flex-1 px-2 space-y-1">
@@ -109,6 +110,10 @@
                             </a>
                         @endauth
                     </nav>
+                    <div class="mt-auto pb-4 px-4 text-center text-white text-sm">
+                        <p>ShiftNester v1.0.0</p>
+                        <!-- <p><u><a href="mailto:support@shiftnester.com">support@shiftnester.com</u></p> -->
+                    </div>
                 </div>
             </div>
         </aside>
@@ -168,6 +173,18 @@
                     </div>
                 </div>
             </main>
+
+            <footer class="bg-white shadow mt-8 py-4">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <p class="text-center text-gray-500 text-sm">
+                        © {{ date('Y') }} ShiftNester. All rights reserved.
+                    </p>
+                    <p class="text-center text-gray-500 text-sm">
+                        For Technical Queries: <u><a href="mailto:support@shiftnester.com">support@shiftnester.com</u>
+                    </p>
+                </div>
+            </footer>
+            
         </div>
     </div>
 

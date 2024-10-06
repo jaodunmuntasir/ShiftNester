@@ -5,7 +5,7 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-800">Shift Preferences</h2>
+        <h2 class="text-3xl font-bold text-gray-800">Please select your preference(s)</h2>
         <button type="submit" form="preferencesForm" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:shadow-outline">
             Save Preferences
         </button>

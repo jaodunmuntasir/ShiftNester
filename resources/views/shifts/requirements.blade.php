@@ -5,7 +5,7 @@
 @section('content')
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-800">Set Shift Requirements</h2>
+        <h2 class="text-3xl font-bold text-gray-800">Shift Configuration</h2>
     </div>
 
     <form action="{{ route('shifts.store') }}" method="POST">

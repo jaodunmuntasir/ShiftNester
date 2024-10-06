@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">Published Shifts</h2>
+    <h2 class="text-3xl font-bold text-gray-800 mb-6"></h2>
 
     <div class="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6">
         <div class="lg:w-1/3">

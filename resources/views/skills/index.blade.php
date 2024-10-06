@@ -6,7 +6,7 @@
 <div class="container mx-auto px-4 sm:px-8">
     <div class="py-8">
         <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4 md:mb-0">Skills</h2>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 md:mb-0"></h2>
             <div class="flex flex-col sm:flex-row w-full md:w-auto">
                 <form method="GET" action="{{ route('skills.index') }}" class="flex-grow mb-4 sm:mb-0 sm:mr-4">
                     <div class="flex">

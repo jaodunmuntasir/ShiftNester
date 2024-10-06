@@ -5,7 +5,7 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-800">Generated Roster</h2>
+        <h2 class="text-3xl font-bold text-gray-800"></h2>
         <div class="space-x-4">
             <button id="generateRosterBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">
                 Generate Roster
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('An error occurred while generating the roster.');
         });
     });
-    
+
     document.getElementById('publishShiftsBtn').addEventListener('click', function() {
         fetch('{{ route('admin.publish_shifts') }}', {
             method: 'POST',
