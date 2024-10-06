@@ -108,15 +108,42 @@ class ShiftController extends Controller
         return view('shifts.published', compact('publishedShifts'));
     }
 
-    public function calendar()
+    public function edit(Shift $shift)
     {
-        $shifts = Shift::with(['requirements.department', 'requirements.designation'])
-            ->get()
-            ->groupBy(function($shift) {
-                return $shift->date->format('Y-m-d');
-            });
+        $departments = Department::with('designations')->get();
+        return view('shifts.edit', compact('shift', 'departments'));
+    }
 
-        return view('shifts.index', compact('shifts'));
+    public function update(Request $request, Shift $shift)
+    {
+        $validatedData = $request->validate([
+            'requirements' => 'required|array',
+            'requirements.*.*' => 'required|integer|min:0',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Delete existing requirements
+            $shift->requirements()->delete();
+
+            // Create new requirements
+            foreach ($validatedData['requirements'] as $departmentId => $designations) {
+                foreach ($designations as $designationId => $employeeCount) {
+                    $shift->requirements()->create([
+                        'department_id' => $departmentId,
+                        'designation_id' => $designationId,
+                        'employee_count' => $employeeCount,
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('shifts.index')->with('success', 'Shift updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'An error occurred while updating the shift.');
+        }
     }
 
     public function destroy(Shift $shift)

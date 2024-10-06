@@ -35,6 +35,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/shifts/create', [ShiftController::class, 'create'])->name('shifts.create');
     Route::post('/shifts/generate', [ShiftController::class, 'generateShifts'])->name('shifts.generate');
     Route::post('/shifts', [ShiftController::class, 'storeShifts'])->name('shifts.store');
+    Route::get('/shifts/{shift}/edit', [ShiftController::class, 'edit'])->name('shifts.edit');
+    Route::put('/shifts/{shift}', [ShiftController::class, 'update'])->name('shifts.update');
     Route::delete('/shifts/{shift}', [ShiftController::class, 'destroy'])->name('shifts.destroy');
 
     Route::resource('employees', EmployeeController::class);

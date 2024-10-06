@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Shifts Calendar')
+@section('title', 'Shifts')
 
 @section('content')
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex flex-col lg:flex-row justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-800 mb-4 lg:mb-0">Shifts Calendar</h2>
+        <h2 class="text-3xl font-bold text-gray-800 mb-4 lg:mb-0">Shift's Calendar</h2>
         <a href="{{ route('shifts.create') }}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-110">
             Create New Shifts
         </a>
