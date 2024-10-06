@@ -44,4 +44,9 @@ class Shift extends Model
     {
         return $this->hasMany(PublishedShift::class);
     }
+
+    public function generatedShifts()
+    {
+        return $this->hasMany(GeneratedShift::class);
+    }
 }

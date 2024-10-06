@@ -26,10 +26,7 @@ class AdminController extends Controller
     {
         $rosterGenerator = new RosterGenerator();
         if ($rosterGenerator->generate()) {
-            $generatedShifts = GeneratedShift::with(['shift', 'employee', 'department', 'designation'])
-                ->get()
-                ->groupBy('shift_id');
-            return view('admin.generated_roster', compact('generatedShifts'))->with('success', 'Roster generated successfully.');
+            return view ('admin.generated_roster')->with('success', 'Roster generated successfully.');
         } else {
             return redirect()->back()->with('error', 'Failed to generate roster.');
         }
@@ -37,10 +34,21 @@ class AdminController extends Controller
 
     public function viewGeneratedRoster()
     {
-        $generatedShifts = GeneratedShift::with(['shift', 'employee', 'department', 'designation'])
-            ->get()
-            ->groupBy('shift_id');
-        return view('admin.generated_roster', compact('generatedShifts'));
+        $shifts = Shift::with(['generatedShifts.employee', 'generatedShifts.department', 'generatedShifts.designation'])
+            ->where('is_published', true)
+            ->get();
+
+        $calendarEvents = [];
+
+        foreach ($shifts as $shift) {
+            $calendarEvents[] = [
+                'title' => 'Shift',
+                'start' => $shift->date . 'T' . $shift->start_time,
+                'end' => $shift->date . 'T' . $shift->end_time,
+            ];
+        }
+
+        return view('admin.generated_roster', compact('calendarEvents'));
     }
 
     public function publishShifts()
@@ -62,6 +70,31 @@ class AdminController extends Controller
             ->get();
 
         return view('shifts.published', compact('publishedShifts'));
+    }
+
+    public function getShiftsForDate($date)
+    {
+        $shifts = Shift::with(['generatedShifts.employee', 'generatedShifts.department', 'generatedShifts.designation'])
+            ->whereDate('date', $date)
+            ->where('is_published', true)
+            ->get();
+
+        $formattedShifts = $shifts->map(function ($shift) {
+            return [
+                'id' => $shift->id,
+                'start_time' => $shift->start_time,
+                'end_time' => $shift->end_time,
+                'allocations' => $shift->generatedShifts->map(function ($generatedShift) {
+                    return [
+                        'department' => $generatedShift->department->name,
+                        'designation' => $generatedShift->designation->name,
+                        'employee' => $generatedShift->is_open ? 'OPEN' : $generatedShift->employee->name,
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json($formattedShifts);
     }
 }
 

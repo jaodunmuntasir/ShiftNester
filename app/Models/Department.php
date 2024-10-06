@@ -23,6 +23,11 @@ class Department extends Model
 
     public function shifts()
     {
-        return $this->hasMany(Shift::class);
+        return $this->hasManyThrough(Shift::class, ShiftRequirement::class);
+    }
+
+    public function shiftRequirements()
+    {
+        return $this->hasMany(ShiftRequirement::class);
     }
 }

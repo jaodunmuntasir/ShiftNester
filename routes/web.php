@@ -19,9 +19,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware('auth', 'verified')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -52,6 +52,7 @@ Route::middleware(['auth', 'employee'])->group(function () {
 
 // Route for fetching designations by department (used in forms)
 Route::get('/designations/by-department/{department}', [DesignationController::class, 'getByDepartment']);
+Route::get('/admin/shifts/{date}', [AdminController::class, 'getShiftsForDate'])->name('admin.shifts.for.date');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/shifts/published', [ShiftController::class, 'viewPublishedShifts'])->name('shifts.published');
