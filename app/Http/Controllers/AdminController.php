@@ -19,8 +19,11 @@ class AdminController extends Controller
     public function viewShiftPreferences()
     {
         $shifts = Shift::with(['preferences' => function($query) {
-            $query->with('employee');
+            $query->with(['employee.designation']);
         }])
+        ->whereDate('date', '>=', now())
+        ->orderBy('date')
+        ->orderBy('start_time')
         ->get()
         ->groupBy(function($shift) {
             return $shift->date->format('Y-m-d');
