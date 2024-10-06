@@ -62,9 +62,9 @@ class AdminController extends Controller
     {
         $publisher = new RosterPublisher();
         if ($publisher->publish()) {
-            return redirect()->route('shifts.published')->with('success', 'Shifts have been published successfully.');
+            return response()->json(['success' => true]);
         } else {
-            return redirect()->back()->with('error', 'Failed to publish shifts.');
+            return response()->json(['success' => false], 500);
         }
     }
 

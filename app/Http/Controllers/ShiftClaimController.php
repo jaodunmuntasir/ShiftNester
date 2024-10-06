@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PublishedShift;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ShiftClaimController extends Controller
 {
@@ -19,7 +20,11 @@ class ShiftClaimController extends Controller
             })
             ->with(['shift', 'department', 'designation'])
             ->get()
-            ->groupBy('shift.date');
+            ->groupBy(function($publishedShift) {
+                return $publishedShift->shift->date->format('Y-m-d');
+            });
+
+        Log::info('Open Shifts:', ['count' => $openShifts->count(), 'data' => $openShifts->toArray()]);
 
         return view('shifts.claim', compact('openShifts'));
     }

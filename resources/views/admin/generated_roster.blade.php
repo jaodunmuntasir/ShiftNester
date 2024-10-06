@@ -10,9 +10,9 @@
             <button id="generateRosterBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">
                 Generate Roster
             </button>
-            <a href="{{ route('admin.publish_shifts') }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">
+            <button id="publishShiftsBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">
                 Publish Shifts
-            </a>
+            </button>
         </div>
     </div>
 
@@ -176,6 +176,29 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             alert('An error occurred while generating the roster.');
+        });
+    });
+    
+    document.getElementById('publishShiftsBtn').addEventListener('click', function() {
+        fetch('{{ route('admin.publish_shifts') }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Shifts published successfully!');
+                window.location.href = '{{ route('shifts.published') }}';
+            } else {
+                alert('Failed to publish shifts. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while publishing the shifts.');
         });
     });
 });
