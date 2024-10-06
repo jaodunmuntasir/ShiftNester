@@ -11,11 +11,18 @@
             <h3 class="text-xl font-semibold mb-2">
                 Shift: {{ $shift->date->format('Y-m-d') }} {{ $shift->start_time->format('H:i') }} - {{ $shift->end_time->format('H:i') }}
             </h3>
-            <ul>
-                @foreach($roster[$shift->id] as $employee)
-                    <li>{{ $employee->name }}</li>
-                @endforeach
-            </ul>
+            @foreach($shift->requirements as $requirement)
+                <h4 class="font-semibold mt-2">{{ $requirement->department->name }} - {{ $requirement->designation->name }}</h4>
+                <ul>
+                    @foreach($generatedRoster[$shift->id] as $allocation)
+                        @if(is_string($allocation) && str_contains($allocation, "{$requirement->department->name} - {$requirement->designation->name}"))
+                            <li class="text-red-500">{{ $allocation }}</li>
+                        @elseif(is_object($allocation) && $allocation->department_id == $requirement->department_id && $allocation->designation_id == $requirement->designation_id)
+                            <li>{{ $allocation->name }}</li>
+                        @endif
+                    @endforeach
+                </ul>
+            @endforeach
         </div>
     @endforeach
 

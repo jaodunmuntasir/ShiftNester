@@ -9,6 +9,7 @@ use App\Http\Controllers\DesignationController;
 use App\Http\Controllers\ShiftPreferenceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ShiftClaimController;
 
 use App\Http\Middleware\EmployeeMiddleware;
 use App\Http\Middleware\AdminMiddleware;
@@ -45,6 +46,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
 Route::middleware(['auth', 'employee'])->group(function () {
     Route::get('/shift-preferences', [ShiftPreferenceController::class, 'index'])->name('shift_preferences.index');
     Route::post('/shift-preferences', [ShiftPreferenceController::class, 'store'])->name('shift_preferences.store');
+    Route::get('/shifts/claim', [ShiftClaimController::class, 'index'])->name('shifts.claim.index');
+    Route::post('/shifts/{publishedShift}/claim', [ShiftClaimController::class, 'claim'])->name('shifts.claim');
 });
 
 // Route for fetching designations by department (used in forms)

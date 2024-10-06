@@ -39,4 +39,9 @@ class Shift extends Model
         return $this->belongsToMany(Employee::class, 'shift_preferences')
                     ->withPivot('preference_level');
     }
+
+    public function publishedShifts()
+    {
+        return $this->hasMany(PublishedShift::class);
+    }
 }

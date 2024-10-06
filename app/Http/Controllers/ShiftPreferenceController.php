@@ -18,7 +18,7 @@ class ShiftPreferenceController extends Controller
             return redirect()->route('dashboard')->with('error', 'You are not registered as an employee.');
         }
 
-        $availableShifts = Shift::where('date', '>', now())
+        $availableShifts = Shift::where('is_published', false)
             ->orderBy('date')
             ->orderBy('start_time')
             ->get();

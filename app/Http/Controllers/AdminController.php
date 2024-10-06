@@ -5,7 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Shift;
 use App\Models\ShiftPreference;
 use App\Models\Employee;
+use App\Models\ShiftRequirement;
+use App\Models\PublishedShift;
+use App\Models\Department;
+use App\Models\Designation;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -17,115 +23,176 @@ class AdminController extends Controller
 
     public function generateRoster()
     {
-        $shifts = Shift::with(['preferences.employee', 'requirements'])->orderBy('date')->orderBy('start_time')->get();
-        $roster = [];
-        $employeeShiftCounts = [];
-        $unassignedPreferences = [];
+        $rosterGenerator = new RosterGenerator();
+        $generatedRoster = $rosterGenerator->generate();
 
-        foreach ($shifts as $shift) {
-            $requiredEmployees = $shift->required_employees;
-            $assignedEmployees = [];
+        $shifts = Shift::with(['requirements.department', 'requirements.designation'])
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
 
-            // Get required skills for this shift
-            $requiredSkills = $shift->requirements->pluck('skill_id')->toArray();
+        session(['generated_roster' => $generatedRoster]);
 
-            // First, assign employees based on their 1st and 2nd preferences
-            for ($preferenceLevel = 1; $preferenceLevel <= 2; $preferenceLevel++) {
-                $preferences = $shift->preferences->where('preference_level', $preferenceLevel)->sortBy(function ($preference) use ($employeeShiftCounts, $requiredSkills) {
-                    $employee = $preference->employee;
-                    $shiftCount = $employeeShiftCounts[$employee->id] ?? 0;
-                    $skillMatch = $employee->skills->whereIn('id', $requiredSkills)->count();
-                    
-                    // Lower score is better (prioritize fewer shifts and better skill match)
-                    return $shiftCount - ($skillMatch * 0.5);
-                });
-                
-                foreach ($preferences as $preference) {
-                    if (count($assignedEmployees) < $requiredEmployees) {
-                        $assignedEmployees[] = $preference->employee;
-                        $employeeId = $preference->employee->id;
-                        $employeeShiftCounts[$employeeId] = ($employeeShiftCounts[$employeeId] ?? 0) + 1;
-                    } else {
-                        // Store unassigned preferences for later consideration
-                        $unassignedPreferences[] = $preference;
-                    }
-                }
-            }
-
-            // If we still need more employees, consider other factors
-            if (count($assignedEmployees) < $requiredEmployees) {
-                $remainingPreferences = $shift->preferences->whereNotIn('employee_id', collect($assignedEmployees)->pluck('id'));
-                
-                // Sort remaining preferences by level, skill match, and fair distribution
-                $sortedPreferences = $remainingPreferences->sortBy(function ($preference) use ($requiredSkills, $employeeShiftCounts) {
-                    $employee = $preference->employee;
-                    $skillMatch = $employee->skills->whereIn('id', $requiredSkills)->count();
-                    $shiftCount = $employeeShiftCounts[$employee->id] ?? 0;
-                    
-                    // Lower score is better
-                    return ($preference->preference_level * 10) - ($skillMatch * 2) + $shiftCount;
-                });
-
-                foreach ($sortedPreferences as $preference) {
-                    if (count($assignedEmployees) < $requiredEmployees) {
-                        $assignedEmployees[] = $preference->employee;
-                        $employeeId = $preference->employee->id;
-                        $employeeShiftCounts[$employeeId] = ($employeeShiftCounts[$employeeId] ?? 0) + 1;
-                    } else {
-                        $unassignedPreferences[] = $preference;
-                    }
-                }
-            }
-
-            $roster[$shift->id] = $assignedEmployees;
-        }
-
-        // Try to accommodate unassigned preferences in other shifts
-        foreach ($unassignedPreferences as $preference) {
-            $employee = $preference->employee;
-            $potentialShifts = $shifts->where('id', '!=', $preference->shift_id)
-                                    ->where('date', '>=', $preference->shift->date)
-                                    ->sortBy('date');
-
-            foreach ($potentialShifts as $shift) {
-                if (count($roster[$shift->id]) < $shift->required_employees && 
-                    !in_array($employee, $roster[$shift->id])) {
-                    $roster[$shift->id][] = $employee;
-                    $employeeShiftCounts[$employee->id] = ($employeeShiftCounts[$employee->id] ?? 0) + 1;
-                    break;
-                }
-            }
-        }
-
-        // Store the generated roster in the session
-        session(['generated_roster' => $roster]);
-
-        return view('admin.generated_roster', compact('roster', 'shifts'));
+        return view('admin.generated_roster', compact('generatedRoster', 'shifts'));
     }
 
     public function publishShifts(Request $request)
     {
         if ($request->isMethod('get')) {
-            // Show confirmation page
             return view('admin.confirm_publish_shifts');
         }
 
-        // Handle POST request (actual publishing)
         $roster = session('generated_roster');
 
         if (!$roster) {
             return redirect()->route('admin.view_shift_preferences')->with('error', 'No roster generated. Please generate a roster first.');
         }
 
-        foreach ($roster as $shiftId => $employees) {
-            $shift = Shift::find($shiftId);
-            $shift->employees()->sync(collect($employees)->pluck('id'));
-            $shift->is_published = true;
-            $shift->save();
-        }
+        $publisher = new RosterPublisher();
+        $publisher->publish($roster);
 
         session()->forget('generated_roster');
 
         return redirect()->route('shifts.published')->with('success', 'Shifts have been published successfully.');
+    }
+
+    public function viewPublishedShifts()
+    {
+        $publishedShifts = Shift::with(['publishedShifts.employee', 'publishedShifts.department', 'publishedShifts.designation'])
+            ->whereHas('publishedShifts')
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+
+        return view('shifts.published', compact('publishedShifts'));
+    }
+}
+
+class RosterGenerator
+{
+    private $shifts;
+    private $roster = [];
+    private $employeeShiftCounts = [];
+
+    public function generate()
+    {
+        $this->shifts = Shift::with(['requirements.department', 'requirements.designation', 'preferences.employee'])
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+
+        foreach ($this->shifts as $shift) {
+            $this->allocateEmployeesForShift($shift);
+        }
+
+        return $this->roster;
+    }
+
+    private function allocateEmployeesForShift($shift)
+    {
+        $this->roster[$shift->id] = [];
+
+        foreach ($shift->requirements as $requirement) {
+            $this->allocateEmployeesForRequirement($shift, $requirement);
+        }
+    }
+
+    private function allocateEmployeesForRequirement($shift, $requirement)
+    {
+        $allocatedCount = 0;
+        $requiredCount = $requirement->employee_count;
+
+        for ($preferenceLevel = 1; $preferenceLevel <= 3 && $allocatedCount < $requiredCount; $preferenceLevel++) {
+            $preferences = $this->getPreferences($shift, $requirement, $preferenceLevel);
+            
+            foreach ($preferences as $preference) {
+                if ($allocatedCount >= $requiredCount) break;
+
+                $employee = $preference->employee;
+                if ($this->canAllocateEmployee($employee, $requirement)) {
+                    $this->roster[$shift->id][] = $employee;
+                    $this->employeeShiftCounts[$employee->id] = ($this->employeeShiftCounts[$employee->id] ?? 0) + 1;
+                    $allocatedCount++;
+                }
+            }
+        }
+
+        // Fill remaining positions with "OPEN"
+        while ($allocatedCount < $requiredCount) {
+            $this->roster[$shift->id][] = "OPEN ({$requirement->department->name} - {$requirement->designation->name})";
+            $allocatedCount++;
+        }
+    }
+
+    private function getPreferences($shift, $requirement, $preferenceLevel)
+    {
+        return $shift->preferences()
+            ->where('preference_level', $preferenceLevel)
+            ->whereHas('employee', function ($query) use ($requirement) {
+                $query->where('department_id', $requirement->department_id)
+                      ->where('designation_id', $requirement->designation_id);
+            })
+            ->get()
+            ->sortBy(function ($preference) {
+                return $this->employeeShiftCounts[$preference->employee_id] ?? 0;
+            });
+    }
+
+    private function canAllocateEmployee($employee, $requirement)
+    {
+        return $employee->department_id == $requirement->department_id &&
+               $employee->designation_id == $requirement->designation_id;
+    }
+}
+
+class RosterPublisher
+{
+    public function publish($roster)
+    {
+        DB::beginTransaction();
+        
+        try {
+            foreach ($roster as $shiftId => $allocations) {
+                $shift = Shift::findOrFail($shiftId);
+                
+                // Delete any existing published shifts for this shift
+                PublishedShift::where('shift_id', $shiftId)->delete();
+                
+                foreach ($allocations as $allocation) {
+                    if (is_object($allocation) && method_exists($allocation, 'id')) {
+                        // This is an allocated employee
+                        PublishedShift::create([
+                            'shift_id' => $shiftId,
+                            'employee_id' => $allocation->id,
+                            'department_id' => $allocation->department_id,
+                            'designation_id' => $allocation->designation_id,
+                            'is_open' => false
+                        ]);
+                    } elseif (is_string($allocation) && strpos($allocation, 'OPEN') !== false) {
+                        // This is an open position
+                        preg_match('/OPEN \((.*?) - (.*?)\)/', $allocation, $matches);
+                        $department = Department::where('name', $matches[1])->first();
+                        $designation = Designation::where('name', $matches[2])->first();
+                        
+                        PublishedShift::create([
+                            'shift_id' => $shiftId,
+                            'employee_id' => null,
+                            'department_id' => $department->id,
+                            'designation_id' => $designation->id,
+                            'is_open' => true
+                        ]);
+                    }
+                }
+                
+                $shift->is_published = true;
+                $shift->save();
+            }
+            
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 }
