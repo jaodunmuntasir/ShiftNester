@@ -18,7 +18,14 @@ class AdminController extends Controller
 {
     public function viewShiftPreferences()
     {
-        $shifts = Shift::with(['preferences.employee'])->get();
+        $shifts = Shift::with(['preferences' => function($query) {
+            $query->with('employee');
+        }])
+        ->get()
+        ->groupBy(function($shift) {
+            return $shift->date->format('Y-m-d');
+        });
+
         return view('admin.shift_preferences', compact('shifts'));
     }
 
@@ -26,29 +33,24 @@ class AdminController extends Controller
     {
         $rosterGenerator = new RosterGenerator();
         if ($rosterGenerator->generate()) {
-            return view ('admin.generated_roster')->with('success', 'Roster generated successfully.');
+            return response()->json(['success' => true]);
         } else {
-            return redirect()->back()->with('error', 'Failed to generate roster.');
+            return response()->json(['success' => false], 500);
         }
     }
 
     public function viewGeneratedRoster()
     {
-        $shifts = Shift::with(['generatedShifts.employee', 'generatedShifts.department', 'generatedShifts.designation'])
-            ->where('is_published', true)
-            ->get();
+        $shifts = Shift::with(['generatedShifts' => function($query) {
+            $query->with(['employee', 'department', 'designation']);
+        }])
+        ->whereHas('generatedShifts')
+        ->get()
+        ->groupBy(function($shift) {
+            return $shift->date->format('Y-m-d');
+        });
 
-        $calendarEvents = [];
-
-        foreach ($shifts as $shift) {
-            $calendarEvents[] = [
-                'title' => 'Shift',
-                'start' => $shift->date . 'T' . $shift->start_time,
-                'end' => $shift->date . 'T' . $shift->end_time,
-            ];
-        }
-
-        return view('admin.generated_roster', compact('calendarEvents'));
+        return view('admin.generated_roster', compact('shifts'));
     }
 
     public function publishShifts()
@@ -63,20 +65,23 @@ class AdminController extends Controller
 
     public function viewPublishedShifts()
     {
-        $publishedShifts = Shift::with(['publishedShifts.employee', 'publishedShifts.department', 'publishedShifts.designation'])
-            ->whereHas('publishedShifts')
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->get();
+        $publishedShifts = Shift::with(['publishedShifts' => function($query) {
+            $query->with(['employee', 'department', 'designation']);
+        }])
+        ->whereHas('publishedShifts')
+        ->get()
+        ->groupBy(function($shift) {
+            return $shift->date->format('Y-m-d');
+        });
 
         return view('shifts.published', compact('publishedShifts'));
     }
 
     public function getShiftsForDate($date)
     {
-        $shifts = Shift::with(['generatedShifts.employee', 'generatedShifts.department', 'generatedShifts.designation'])
+        $shifts = Shift::with(['generatedShifts.employee', 'generatedShifts.department', 'generatedShifts.designation', 'preferences.employee'])
             ->whereDate('date', $date)
-            ->where('is_published', true)
+            ->orderBy('start_time')
             ->get();
 
         $formattedShifts = $shifts->map(function ($shift) {
@@ -89,6 +94,14 @@ class AdminController extends Controller
                         'department' => $generatedShift->department->name,
                         'designation' => $generatedShift->designation->name,
                         'employee' => $generatedShift->is_open ? 'OPEN' : $generatedShift->employee->name,
+                    ];
+                }),
+                'preferences' => $shift->preferences->map(function ($preference) {
+                    return [
+                        'employee' => [
+                            'name' => $preference->employee->name,
+                        ],
+                        'preference_level' => $preference->preference_level,
                     ];
                 }),
             ];

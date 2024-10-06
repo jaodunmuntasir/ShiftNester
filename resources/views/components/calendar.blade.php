@@ -11,45 +11,65 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const calendarGrid = document.querySelector('.calendar-grid');
-    const currentMonthElement = document.getElementById('currentMonth');
-    let currentDate = new Date();
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: 'auto',
+        selectable: true,
+        select: function(info) {
+            fetchShiftDetails(info.startStr);
+        },
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek'
+        }
+    });
+    calendar.render();
 
-    function renderCalendar(date) {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        
-        currentMonthElement.textContent = `${date.toLocaleString('default', { month: 'long' })} ${year}`;
-        
-        calendarGrid.innerHTML = '';
-        
-        for (let i = 0; i < firstDay.getDay(); i++) {
-            calendarGrid.innerHTML += '<div></div>';
-        }
-        
-        for (let day = 1; day <= lastDay.getDate(); day++) {
-            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            calendarGrid.innerHTML += `
-                <div class="calendar-day" data-date="${dateString}">
-                    <span>${day}</span>
-                </div>
-            `;
-        }
+    function fetchShiftDetails(date) {
+        fetch(`/admin/shifts/${date}`)
+            .then(response => response.json())
+            .then(data => {
+                displayShiftDetails(data, date);
+            });
     }
 
-    renderCalendar(currentDate);
+    function displayShiftDetails(shifts, date) {
+        let html = `<h3 class="text-xl font-semibold mb-4">Shifts for ${formatDate(date)}</h3>`;
+        if (shifts.length === 0) {
+            html += '<p class="text-gray-600">No shifts for this date.</p>';
+        } else {
+            shifts.forEach(shift => {
+                html += `
+                    <div class="bg-white shadow-md rounded-lg p-4 mb-4">
+                        <h4 class="text-lg font-semibold mb-2">${formatTime(shift.start_time)} - ${formatTime(shift.end_time)}</h4>
+                        <ul class="space-y-2">
+                `;
+                shift.allocations.forEach(allocation => {
+                    html += `
+                        <li class="flex justify-between items-center">
+                            <span>${allocation.department} - ${allocation.designation}</span>
+                            <span class="font-medium ${allocation.employee === 'OPEN' ? 'text-red-600' : ''}">${allocation.employee}</span>
+                        </li>
+                    `;
+                });
+                html += `
+                        </ul>
+                    </div>
+                `;
+            });
+        }
+        document.getElementById('shiftDetails').innerHTML = html;
+    }
 
-    document.getElementById('prevMonth').addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar(currentDate);
-    });
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
 
-    document.getElementById('nextMonth').addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar(currentDate);
-    });
+    function formatTime(timeString) {
+        return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
 });
 </script>
 

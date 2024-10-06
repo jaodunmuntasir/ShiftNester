@@ -97,17 +97,6 @@ class ShiftController extends Controller
         return redirect()->route('shifts.index')->with('success', 'Shifts created and published successfully.');
     }
 
-    public function viewPublishedShifts()
-    {
-        $publishedShifts = Shift::where('is_published', true)
-            ->with(['employees'])
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->get();
-
-        return view('shifts.published', compact('publishedShifts'));
-    }
-
     public function edit(Shift $shift)
     {
         $departments = Department::with('designations')->get();

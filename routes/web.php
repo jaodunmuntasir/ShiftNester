@@ -58,15 +58,14 @@ Route::get('/designations/by-department/{department}', [DesignationController::c
 Route::get('/admin/shifts/{date}', [AdminController::class, 'getShiftsForDate'])->name('admin.shifts.for.date');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/shifts/published', [ShiftController::class, 'viewPublishedShifts'])->name('shifts.published');
+    Route::get('/published-shifts', [AdminController::class, 'viewPublishedShifts'])->name('shifts.published');
 });
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/shift-preferences', [AdminController::class, 'viewShiftPreferences'])->name('admin.view_shift_preferences');
-    Route::get('/admin/generate-roster', [AdminController::class, 'generateRoster'])->name('admin.generate_roster');
     Route::get('/admin/view-generated-roster', [AdminController::class, 'viewGeneratedRoster'])->name('admin.view_generated_roster');
-    Route::match(['get', 'post'], '/admin/publish-shifts', [AdminController::class, 'publishShifts'])->name('admin.publish_shifts');
-    Route::get('/shifts/calendar', [ShiftController::class, 'calendar'])->name('shifts.calendar');
+    Route::post('/admin/generate-roster', [AdminController::class, 'generateRoster'])->name('admin.generate_roster');
+    Route::post('/admin/publish-shifts', [AdminController::class, 'publishShifts'])->name('admin.publish_shifts');
 });
 
 require __DIR__.'/auth.php';
