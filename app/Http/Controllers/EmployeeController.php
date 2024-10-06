@@ -11,9 +11,43 @@ use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::with(['department', 'designation', 'user'])->paginate(10);
+        $query = Employee::query();
+
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                ->orWhere('email', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        if ($request->has('sort')) {
+            $direction = $request->direction == 'asc' ? 'asc' : 'desc';
+            
+            switch ($request->sort) {
+                case 'name':
+                    $query->orderBy('name', $direction);
+                    break;
+                case 'department':
+                    $query->join('departments', 'employees.department_id', '=', 'departments.id')
+                        ->orderBy('departments.name', $direction)
+                        ->select('employees.*');
+                    break;
+                case 'designation':
+                    $query->join('designations', 'employees.designation_id', '=', 'designations.id')
+                        ->orderBy('designations.name', $direction)
+                        ->select('employees.*');
+                    break;
+                case 'hire_date':
+                    $query->orderBy('hire_date', $direction);
+                    break;
+            }
+        }
+
+        $employees = $query->paginate(10);
+
         return view('employees.index', compact('employees'));
     }
 
