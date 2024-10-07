@@ -16,7 +16,7 @@
     <div class="min-h-screen flex items-center justify-center">
         <div class="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
             <div class="text-center mb-8">
-                <img src="https://shorturl.at/lC0oN" alt="KFC Logo" class="mx-auto h-16 mb-4">
+                <img src="https://shiftnester.com/wp-content/uploads/2024/05/ShiftNesters-Logo-Green-medium-size.png" alt="KFC Logo" class="mx-auto h-16 mb-4">
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">ShiftNester</h1>
                 <p class="text-gray-600">Efficient shift management for your employees</p>
             </div>

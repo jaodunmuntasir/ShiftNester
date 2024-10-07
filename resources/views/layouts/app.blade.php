@@ -30,11 +30,11 @@
         <!-- Sidebar -->
         <aside class="hidden md:flex md:flex-shrink-0">
             <div class="flex flex-col w-64">
+                <div class="flex flex-col items-center flex-shrink-0 px-4 py-4 bg-white border-blue-600 border-t border-b border-r focus:outline-none">
+                    <a href="{{ route('dashboard') }}"><img src="{{ asset('https://shiftnester.com/wp-content/uploads/2024/05/ShiftNesters-Logo-Green-medium-size.png') }}" alt="ShiftNester Logo" class="w-16 h-16 mb-2"></a>
+                    <span class="text-xl font-semibold text-primary">ShiftNester</span>
+                </div>
                 <div class="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-primary">
-                    <div class="flex flex-col items-center flex-shrink-0 px-4">
-                        <img src="{{ asset('https://shorturl.at/lC0oN') }}" alt="Logo" class="w-16 h-16 mb-2">
-                        <span class="text-2xl font-semibold text-white">ShiftNester</span>
-                    </div>
                     <nav class="mt-5 flex-1 px-2 space-y-1">
                         <a href="{{ route('dashboard') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-primary-dark">
                             <svg class="mr-3 h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,7 +111,7 @@
                         @endauth
                     </nav>
                     <div class="mt-auto pb-4 px-4 text-center text-white text-sm">
-                        <p>ShiftNester v1.0.0</p>
+                        <p><a href="https://shiftnester.com/">ShiftNester v1.0.0</a></p>
                         <!-- <p><u><a href="mailto:support@shiftnester.com">support@shiftnester.com</u></p> -->
                     </div>
                 </div>
