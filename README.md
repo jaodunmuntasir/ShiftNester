@@ -1,5 +1,7 @@
 # Employee Shift Management System
 
+## ShiftNester is an Automatic Employee Shift Management System that is designed to streamline the process of creating, assigning, and managing employee shifts. It caters to organizations with multiple departments and roles, allowing for efficient scheduling while considering employee preferences and introduces the idea of a open shift marketplace system.
+
 ## Table of Contents
 1. [Installation](#installation)
 2. [System Overview](#system-overview)
